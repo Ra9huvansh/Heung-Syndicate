@@ -1,0 +1,18 @@
+# Claude instructions — keep local only
+CLAUDE.md
+
+# Foundry
+cache/
+out/
+broadcast/
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
