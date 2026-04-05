@@ -1,0 +1,124 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap");
+@import "tailwindcss";
+
+/* ─── Neo Brutalism Design Tokens ─────────────────────────────────────────── */
+:root {
+  --background:      #FFFDF5;
+  --foreground:      #000000;
+
+  /* Brand palette */
+  --brand-yellow:    #FFD23F;
+  --brand-coral:     #FF6B6B;
+  --brand-blue:      #74B9FF;
+  --brand-green:     #88D498;
+  --brand-orange:    #FFA552;
+  --brand-lavender:  #B8A9FA;
+
+  /* Financial semantics */
+  --fin-positive:    #22C55E;
+  --fin-negative:    #EF4444;
+  --fin-warning:     #FFA552;
+  --fin-info:        #74B9FF;
+
+  /* Hard shadows — no blur, no spread */
+  --shadow-sm:       3px 3px 0 0 #000000;
+  --shadow-md:       5px 5px 0 0 #000000;
+  --shadow-lg:       8px 8px 0 0 #000000;
+  --shadow-green:    5px 5px 0 0 #22C55E;
+  --shadow-red:      5px 5px 0 0 #EF4444;
+  --shadow-yellow:   5px 5px 0 0 #FFD23F;
+  --shadow-orange:   5px 5px 0 0 #FFA552;
+}
+
+@theme inline {
+  --color-background:   var(--background);
+  --color-foreground:   var(--foreground);
+
+  /* Brand */
+  --color-brand-yellow:   var(--brand-yellow);
+  --color-brand-coral:    var(--brand-coral);
+  --color-brand-blue:     var(--brand-blue);
+  --color-brand-green:    var(--brand-green);
+  --color-brand-orange:   var(--brand-orange);
+  --color-brand-lavender: var(--brand-lavender);
+
+  /* Financial */
+  --color-fin-positive:   var(--fin-positive);
+  --color-fin-negative:   var(--fin-negative);
+  --color-fin-warning:    var(--fin-warning);
+  --color-fin-info:       var(--fin-info);
+
+  /* Fonts */
+  --font-display:  "Syne", sans-serif;
+  --font-heading:  "Space Grotesk", sans-serif;
+  --font-body:     "Inter", sans-serif;
+  --font-mono:     "Space Mono", monospace;
+
+  /* Shadows */
+  --shadow-nb-sm:     var(--shadow-sm);
+  --shadow-nb:        var(--shadow-md);
+  --shadow-nb-lg:     var(--shadow-lg);
+  --shadow-nb-green:  var(--shadow-green);
+  --shadow-nb-red:    var(--shadow-red);
+  --shadow-nb-yellow: var(--shadow-yellow);
+  --shadow-nb-orange: var(--shadow-orange);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+* {
+  border-radius: 0 !important; /* neo brutalism: no rounded corners, ever */
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Neo brutalist card ─────────────────────────────────────────────────── */
+.nb-card {
+  border: 3px solid #000000;
+  box-shadow: var(--shadow-md);
+  background: #ffffff;
+  padding: 1.5rem;
+}
+
+/* ─── Interactive states ─────────────────────────────────────────────────── */
+.nb-interactive {
+  transition: transform 100ms ease, box-shadow 100ms ease;
+  cursor: pointer;
+}
+.nb-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0 0 #000000;
+}
+.nb-interactive:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+/* ─── Value flash animation ──────────────────────────────────────────────── */
+@keyframes flash-positive {
+  0%   { background-color: inherit; }
+  15%  { background-color: #22C55E; }
+  100% { background-color: inherit; }
+}
+@keyframes flash-negative {
+  0%   { background-color: inherit; }
+  15%  { background-color: #EF4444; }
+  100% { background-color: inherit; }
+}
+.flash-positive { animation: flash-positive 300ms ease-out; }
+.flash-negative { animation: flash-negative 300ms ease-out; }
+
+/* ─── Typography helpers ─────────────────────────────────────────────────── */
+.font-display  { font-family: var(--font-display);  font-weight: 800; }
+.font-heading  { font-family: var(--font-heading);  font-weight: 700; }
+.font-body     { font-family: var(--font-body);     font-weight: 400; }
+.font-mono     { font-family: var(--font-mono) !important; } /* ALL financial numbers */
+
+/* ─── Status colors ──────────────────────────────────────────────────────── */
+.status-safe    { background: #22C55E; box-shadow: var(--shadow-green);  border: 3px solid #000; color: #000; }
+.status-warning { background: #FFA552; box-shadow: var(--shadow-orange); border: 3px solid #000; color: #000; }
+.status-breach  { background: #EF4444; box-shadow: var(--shadow-red);    border: 3px solid #000; color: #fff; }
