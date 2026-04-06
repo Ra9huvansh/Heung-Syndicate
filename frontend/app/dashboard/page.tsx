@@ -232,16 +232,20 @@ export default function DashboardPage() {
       ].sort((a, b) => a.price - b.price);
     }
 
-    // Sort by price descending, build cumulative step curve
-    const sorted = [...revealed].sort((a, b) => Number(b.pricePerShare) - Number(a.pricePerShare));
-    const points: { price: number; demand: number }[] = [];
-    let cumulative = 0;
-    for (const ioi of sorted) {
+    // Cumulative demand curve: at each price point, demand = total shares from bids at that price or higher
+    // Sort prices ascending so chart reads left (cheap, high demand) → right (expensive, low demand)
+    const totalQty = revealed.reduce((sum, ioi) => sum + Number(ioi.quantity), 0);
+    const priceMap = new Map<number, number>();
+    for (const ioi of revealed) {
       const price = Number(formatUnits(ioi.pricePerShare, 18));
-      const qty   = Number(ioi.quantity);
-      if (points.length > 0) points.push({ price, demand: cumulative });
-      cumulative += qty;
-      points.push({ price, demand: cumulative });
+      priceMap.set(price, (priceMap.get(price) ?? 0) + Number(ioi.quantity));
+    }
+    const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => a - b);
+    const points: { price: number; demand: number }[] = [];
+    let remaining = totalQty;
+    for (const price of sortedPrices) {
+      points.push({ price, demand: remaining });
+      remaining -= priceMap.get(price)!;
     }
     return points;
   })();
