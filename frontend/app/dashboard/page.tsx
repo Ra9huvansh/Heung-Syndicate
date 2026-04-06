@@ -131,6 +131,13 @@ export default function DashboardPage() {
     query: { refetchInterval: 5000 },
   });
 
+  const { data: revealedIOIs } = useReadContract({
+    address: CONTRACT_ADDRESSES.orderBook,
+    abi: ORDER_BOOK_ABI,
+    functionName: "getAllRevealedIOIs",
+    query: { refetchInterval: 3000 },
+  });
+
   const { data: whitelistedAddresses, refetch: refetchWhitelist } = useReadContract({
     address: CONTRACT_ADDRESSES.bookBuilder,
     abi: BOOK_BUILDER_ABI,
@@ -203,11 +210,28 @@ export default function DashboardPage() {
   const weightedAvg    = demand ? Number(formatUnits(demand.weightedAvgPrice, 18)) : 0;
   const totalShares    = demand ? Number(demand.totalShares) : 0;
 
-  const demandCurveData = totalShares > 0 ? [
-    { price: priceLow,  demand: totalShares },
-    { price: weightedAvg > 0 ? weightedAvg : (priceLow + priceHigh) / 2, demand: Math.round(totalShares * 0.7) },
-    { price: priceHigh, demand: Math.round(totalShares * 0.4) },
-  ].sort((a, b) => a.price - b.price) : [];
+  // Build demand curve from actual revealed IOIs: sort by price desc, compute cumulative demand
+  const demandCurveData = (() => {
+    if (!revealedIOIs || revealedIOIs.length === 0) return [];
+    // Sort bids by price descending
+    const sorted = [...revealedIOIs].sort((a, b) =>
+      Number(b.pricePerShare) - Number(a.pricePerShare)
+    );
+    // Build cumulative curve points: at each unique price, total shares demanded at that price or higher
+    const points: { price: number; demand: number }[] = [];
+    let cumulative = 0;
+    for (const ioi of sorted) {
+      const price = Number(formatUnits(ioi.pricePerShare, 18));
+      const qty   = Number(ioi.quantity);
+      // Add a point just before this step (to create vertical drop)
+      if (points.length > 0) {
+        points.push({ price, demand: cumulative });
+      }
+      cumulative += qty;
+      points.push({ price, demand: cumulative });
+    }
+    return points;
+  })();
 
   // ── Actions ──────────────────────────────────────────────────────────────
   function advancePhase() {

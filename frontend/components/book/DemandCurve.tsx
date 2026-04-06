@@ -88,7 +88,7 @@ export default function DemandCurve({ data, priceRangeLow, priceRangeHigh, strik
       </p>
 
       <ResponsiveContainer width="100%" height={280}>
-        <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+        <ComposedChart data={data} margin={{ top: 8, right: 48, bottom: 8, left: 16 }}>
           <CartesianGrid strokeDasharray="none" stroke="rgba(0,0,0,0.06)" vertical={false} />
           <XAxis dataKey="price" type="number" domain={["dataMin - 0.5", "dataMax + 0.5"]} tick={<MonoTick />} tickLine={false} axisLine={{ stroke: "#000", strokeWidth: 2 }} />
           <YAxis tick={<MonoTickY />} tickLine={false} axisLine={{ stroke: "#000", strokeWidth: 2 }} />
