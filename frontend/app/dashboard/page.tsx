@@ -347,7 +347,7 @@ export default function DashboardPage() {
         <StatCard label="Commitments"      value={String(commitCount ?? 0)}                                                                    unit="IOIs"   />
         <StatCard label="Coverage Ratio"   value={coverageRatio > 0 ? `${coverageRatio.toFixed(2)}x` : "—"}                                              />
         <StatCard label="Weighted Avg Bid" value={weightedAvg > 0 ? `HK$${weightedAvg.toFixed(2)}` : "—"}                                               />
-        <StatCard label="Total Demand"     value={totalShares > 0 ? `${(totalShares / 1_000_000).toFixed(1)}M` : "—"}                         unit="shares" />
+        <StatCard label="Total Demand"     value={totalShares > 0 ? `${(totalShares / 1_000_000).toFixed(2)}M` : "—"}                         unit="shares" />
       </div>
 
       {/* Demand curve + controls */}
