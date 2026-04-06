@@ -1,0 +1,245 @@
+/Users/ra9huvansh/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+'forge clean' running (wd: /Users/ra9huvansh/Desktop/Heung-Syndicate)
+'forge config --json' running
+'forge build --build-info --skip ./test/** ./script/** --force' running (wd: /Users/ra9huvansh/Desktop/Heung-Syndicate)
+INFO:Detectors:
+Detector: arbitrary-send-eth
+OrderBook.withdrawSlashed() (contracts/OrderBook.sol#322-327) sends eth to arbitrary user
+	Dangerous calls:
+	- (ok,None) = address(msg.sender).call{value: amount}() (contracts/OrderBook.sol#325)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#functions-that-send-ether-to-arbitrary-destinations
+INFO:Detectors:
+Detector: divide-before-multiply
+Allocation.computeAllocations() (contracts/Allocation.sol#122-223) performs a multiplication on the result of a division:
+	- retailShares = (totalShares * retailBps) / 10000 (contracts/Allocation.sol#168)
+	- trancheSummary = TrancheSummary({cornerstoneShares:cornerstoneAllocated,institutionalShares:instAllocated,retailShares:retailShares,cornerstoneBps:(cornerstoneAllocated * 10000) / totalShares,institutionalBps:(instAllocated * 10000) / totalShares,retailBps:(retailShares * 10000) / totalShares}) (contracts/Allocation.sol#209-216)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#divide-before-multiply
+INFO:Detectors:
+Detector: incorrect-equality
+FloatMonitor.getAtRiskCompanies() (contracts/FloatMonitor.sol#279-295) uses a dangerous strict equality:
+	- r == FloatRisk.Warning || r == FloatRisk.Breach (contracts/FloatMonitor.sol#283)
+FloatMonitor.getAtRiskCompanies() (contracts/FloatMonitor.sol#279-295) uses a dangerous strict equality:
+	- c.risk == FloatRisk.Warning || c.risk == FloatRisk.Breach (contracts/FloatMonitor.sol#290)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#dangerous-strict-equalities
+INFO:Detectors:
+Detector: unused-return
+OrderBook.commitIOI(bytes32) (contracts/OrderBook.sol#121-153) ignores return value by (whitelisted,isCornerstone,isConnectedPerson,None) = bookBuilder.whitelist(msg.sender) (contracts/OrderBook.sol#132)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+INFO:Detectors:
+Detector: calls-loop
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: registry.isPublicFloat(holders[i]) (contracts/FloatMonitor.sol#155)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: publicShares += registry.balanceOf(holders[i]) (contracts/FloatMonitor.sol#156)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: registry.isPublicFloat(holders[i]) (contracts/FloatMonitor.sol#155)
+	Calls stack containing the loop:
+		FloatMonitor.getFloatRisk(address)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: publicShares += registry.balanceOf(holders[i]) (contracts/FloatMonitor.sol#156)
+	Calls stack containing the loop:
+		FloatMonitor.getFloatRisk(address)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: registry.isPublicFloat(holders[i]) (contracts/FloatMonitor.sol#155)
+	Calls stack containing the loop:
+		FloatMonitor.checkAndAlert(address)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: publicShares += registry.balanceOf(holders[i]) (contracts/FloatMonitor.sol#156)
+	Calls stack containing the loop:
+		FloatMonitor.checkAndAlert(address)
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: totalSupply = registry.totalSupply() (contracts/FloatMonitor.sol#148)
+	Calls stack containing the loop:
+		FloatMonitor.checkAllCompanies()
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: holders = registry.getAllHolders() (contracts/FloatMonitor.sol#151)
+	Calls stack containing the loop:
+		FloatMonitor.checkAllCompanies()
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: registry.isPublicFloat(holders[i]) (contracts/FloatMonitor.sol#155)
+	Calls stack containing the loop:
+		FloatMonitor.checkAllCompanies()
+FloatMonitor.computePublicFloat(address) (contracts/FloatMonitor.sol#146-161) has external calls inside a loop: publicShares += registry.balanceOf(holders[i]) (contracts/FloatMonitor.sol#156)
+	Calls stack containing the loop:
+		FloatMonitor.checkAllCompanies()
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+INFO:Detectors:
+Detector: timestamp
+BookBuilder.constructor(address,address,bytes32,string,string,uint256,uint256,uint256,uint256,uint256,uint256,BookBuilder.Mechanism) (contracts/BookBuilder.sol#89-136) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(commitDeadline_ > block.timestamp,Commit deadline in past) (contracts/BookBuilder.sol#104)
+BookBuilder.checkAndAdvancePhase() (contracts/BookBuilder.sol#153-167) uses timestamp for comparisons
+	Dangerous comparisons:
+	- currentPhase == Phase.Commitment && block.timestamp > offering.commitDeadline (contracts/BookBuilder.sol#154)
+	- currentPhase == Phase.Reveal && block.timestamp > offering.revealDeadline (contracts/BookBuilder.sol#158)
+	- currentPhase == Phase.PriceDiscovery && block.timestamp > offering.pricingDeadline (contracts/BookBuilder.sol#162)
+BookBuilder.timeUntilNextDeadline() (contracts/BookBuilder.sol#249-263) uses timestamp for comparisons
+	Dangerous comparisons:
+	- offering.commitDeadline > block.timestamp (contracts/BookBuilder.sol#251-252)
+	- offering.revealDeadline > block.timestamp (contracts/BookBuilder.sol#255-256)
+	- offering.pricingDeadline > block.timestamp (contracts/BookBuilder.sol#259-260)
+FloatMonitor.registerCompany(address,string,string,uint256) (contracts/FloatMonitor.sol#106-128) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(! companies[shareToken_].active,Already registered) (contracts/FloatMonitor.sol#113)
+FloatMonitor.updateMarketCap(address,uint256) (contracts/FloatMonitor.sol#130-137) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(companies[shareToken_].active,Not registered) (contracts/FloatMonitor.sol#134)
+FloatMonitor.getRequiredMinFloat(address) (contracts/FloatMonitor.sol#164-172) uses timestamp for comparisons
+	Dangerous comparisons:
+	- thresholds[i].marketCapHigh == 0 || marketCap < thresholds[i].marketCapHigh (contracts/FloatMonitor.sol#167)
+FloatMonitor.checkAndAlert(address) (contracts/FloatMonitor.sol#194-213) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(companies[shareToken_].active,Not registered) (contracts/FloatMonitor.sol#195)
+FloatMonitor.getAtRiskCompanies() (contracts/FloatMonitor.sol#279-295) uses timestamp for comparisons
+	Dangerous comparisons:
+	- r == FloatRisk.Warning || r == FloatRisk.Breach (contracts/FloatMonitor.sol#283)
+	- c.risk == FloatRisk.Warning || c.risk == FloatRisk.Breach (contracts/FloatMonitor.sol#290)
+OrderBook.commitIOI(bytes32) (contracts/OrderBook.sol#121-153) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(iois[msg.sender].status == IOIStatus.None,Already committed) (contracts/OrderBook.sol#129)
+OrderBook.revealIOI(uint256,uint256,bytes32,OrderBook.InvestorType,OrderBook.OrderType) (contracts/OrderBook.sol#161-200) uses timestamp for comparisons
+	Dangerous comparisons:
+	- require(bool,string)(ioi.status == IOIStatus.Committed,Not committed or already revealed) (contracts/OrderBook.sol#173)
+	- require(bool,string)(expected == ioi.commitHash,Hash mismatch - invalid reveal) (contracts/OrderBook.sol#181)
+OrderBook.getAllRevealedIOIs() (contracts/OrderBook.sol#298-315) uses timestamp for comparisons
+	Dangerous comparisons:
+	- iois[_committedInvestors[i]].status >= IOIStatus.Revealed (contracts/OrderBook.sol#303)
+ShareRegistry.isPublicFloat(address) (contracts/ShareRegistry.sol#149-159) uses timestamp for comparisons
+	Dangerous comparisons:
+	- info.lockedUntil < block.timestamp (contracts/ShareRegistry.sol#156)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+INFO:Detectors:
+Detector: assembly
+StorageSlot.getAddressSlot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#66-70) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#67-69)
+StorageSlot.getBooleanSlot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#75-79) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#76-78)
+StorageSlot.getBytes32Slot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#84-88) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#85-87)
+StorageSlot.getUint256Slot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#93-97) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#94-96)
+StorageSlot.getInt256Slot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#102-106) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#103-105)
+StorageSlot.getStringSlot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#111-115) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#112-114)
+StorageSlot.getStringSlot(string) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#120-124) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#121-123)
+StorageSlot.getBytesSlot(bytes32) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#129-133) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#130-132)
+StorageSlot.getBytesSlot(bytes) (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#138-142) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#139-141)
+Hashes.efficientKeccak256(bytes32,bytes32) (lib/openzeppelin-contracts/contracts/utils/cryptography/Hashes.sol#24-30) uses assembly
+	- INLINE ASM (lib/openzeppelin-contracts/contracts/utils/cryptography/Hashes.sol#25-29)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+INFO:Detectors:
+Detector: pragma
+5 different versions of Solidity are used:
+	- Version constraint ^0.8.24 is used by:
+		-^0.8.24 (contracts/Allocation.sol#2)
+		-^0.8.24 (contracts/BookBuilder.sol#2)
+		-^0.8.24 (contracts/FloatMonitor.sol#2)
+		-^0.8.24 (contracts/OrderBook.sol#2)
+		-^0.8.24 (contracts/ShareRegistry.sol#2)
+		-^0.8.24 (contracts/mocks/MockUSDC.sol#2)
+	- Version constraint ^0.8.20 is used by:
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/access/AccessControl.sol#4)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol#4)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/Context.sol#4)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol#4)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#5)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/cryptography/Hashes.sol#4)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol#5)
+		-^0.8.20 (lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol#4)
+	- Version constraint >=0.8.4 is used by:
+		->=0.8.4 (lib/openzeppelin-contracts/contracts/access/IAccessControl.sol#4)
+		->=0.8.4 (lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol#4)
+	- Version constraint >=0.4.16 is used by:
+		->=0.4.16 (lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol#4)
+		->=0.4.16 (lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol#4)
+	- Version constraint >=0.6.2 is used by:
+		->=0.6.2 (lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol#4)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#different-pragma-directives-are-used
+INFO:Detectors:
+Detector: costly-loop
+OrderBook.slashNonRevealers() (contracts/OrderBook.sol#208-221) has costly operations inside a loop:
+	- totalSlashed += depositAmount (contracts/OrderBook.sol#217)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#costly-operations-inside-a-loop
+INFO:Detectors:
+Detector: cyclomatic-complexity
+Allocation.computeAllocations() (contracts/Allocation.sol#122-223) has a high cyclomatic complexity (17).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+INFO:Detectors:
+Detector: solc-version
+Version constraint ^0.8.20 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- VerbatimInvalidDeduplication
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess.
+It is used by:
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/access/AccessControl.sol#4)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol#4)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/Context.sol#4)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol#4)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/StorageSlot.sol#5)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/cryptography/Hashes.sol#4)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol#5)
+	- ^0.8.20 (lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol#4)
+Version constraint >=0.8.4 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- FullInlinerNonExpressionSplitArgumentEvaluationOrder
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- DataLocationChangeInInternalOverride
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- SignedImmutables.
+It is used by:
+	- >=0.8.4 (lib/openzeppelin-contracts/contracts/access/IAccessControl.sol#4)
+	- >=0.8.4 (lib/openzeppelin-contracts/contracts/interfaces/draft-IERC6093.sol#4)
+Version constraint >=0.4.16 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- DirtyBytesArrayToStorage
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow
+	- privateCanBeOverridden
+	- SignedArrayStorageCopy
+	- ABIEncoderV2StorageArrayWithMultiSlotElement
+	- DynamicConstructorArgumentsClippedABIV2
+	- UninitializedFunctionPointerInConstructor_0.4.x
+	- IncorrectEventSignatureInLibraries_0.4.x
+	- ExpExponentCleanup
+	- NestedArrayFunctionCallDecoder
+	- ZeroFunctionSelector.
+It is used by:
+	- >=0.4.16 (lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol#4)
+	- >=0.4.16 (lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol#4)
+Version constraint >=0.6.2 contains known severe issues (https://solidity.readthedocs.io/en/latest/bugs.html)
+	- MissingSideEffectsOnSelectorAccess
+	- AbiReencodingHeadOverflowWithStaticArrayCleanup
+	- DirtyBytesArrayToStorage
+	- NestedCalldataArrayAbiReencodingSizeValidation
+	- ABIDecodeTwoDimensionalArrayMemory
+	- KeccakCaching
+	- EmptyByteArrayCopy
+	- DynamicArrayCleanup
+	- MissingEscapingInFormatting
+	- ArraySliceDynamicallyEncodedBaseType
+	- ImplicitConstructorCallvalueCheck
+	- TupleAssignmentMultiStackSlotComponents
+	- MemoryArrayCreationOverflow.
+It is used by:
+	- >=0.6.2 (lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol#4)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#incorrect-versions-of-solidity
+INFO:Detectors:
+Detector: low-level-calls
+Low level call in OrderBook.revealIOI(uint256,uint256,bytes32,OrderBook.InvestorType,OrderBook.OrderType) (contracts/OrderBook.sol#161-200):
+	- (ok,None) = address(msg.sender).call{value: depositAmount}() (contracts/OrderBook.sol#196)
+Low level call in OrderBook.withdrawSlashed() (contracts/OrderBook.sol#322-327):
+	- (ok,None) = address(msg.sender).call{value: amount}() (contracts/OrderBook.sol#325)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#low-level-calls
+INFO:Detectors:
+Detector: cache-array-length
+Loop condition i < _committedInvestors.length (contracts/OrderBook.sol#302) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i_scope_0 < _committedInvestors.length (contracts/OrderBook.sol#308) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i < _companyList.length (contracts/FloatMonitor.sol#217) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i < _companyList.length (contracts/FloatMonitor.sol#260) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i < _companyList.length (contracts/FloatMonitor.sol#281) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i_scope_0 < _companyList.length (contracts/FloatMonitor.sol#288) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i < _allocations.length (contracts/Allocation.sol#276) should use cached array length instead of referencing `length` member of the storage array.
+ Loop condition i < _committedInvestors.length (contracts/OrderBook.sol#213) should use cached array length instead of referencing `length` member of the storage array.
+ Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cache-array-length
+INFO:Slither:. analyzed (21 contracts with 100 detectors), 54 result(s) found

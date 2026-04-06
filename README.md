@@ -182,6 +182,27 @@ Open `http://localhost:3000`.
 
 ---
 
+## Security Analysis
+
+Both Slither and Aderyn static analyzers were run against all 5 contracts. Full reports are in the `audits/` directory.
+
+| Tool | Findings | Notes |
+|---|---|---|
+| Slither | 54 results | Majority are informational (pragma versions from OZ deps, timestamp usage, low-level calls intentional for ETH refund) |
+| Aderyn | See report | Cyfrin's Rust-based analyzer, full markdown report included |
+
+**Key findings and mitigations:**
+
+- `arbitrary-send-eth` in `OrderBook.withdrawSlashed()` — intentional, only callable by the bookrunner to withdraw slashed deposits to themselves, not an arbitrary address
+- `calls-loop` in `FloatMonitor.computePublicFloat()` — known gas limitation for on-chain float computation over all holders; acceptable for a testnet prototype with a bounded holder set
+- `divide-before-multiply` in `Allocation.computeAllocations()` — integer division rounding acknowledged, amounts to at most 1 wei precision loss per tranche
+- `timestamp` usage in `BookBuilder` — necessary for phase deadline enforcement; miner manipulation not a concern on HashKey Chain's PoS L2
+- All pragma version warnings originate from OpenZeppelin library dependencies, not custom contracts
+
+Full reports: [Aderyn](audits/aderyn-report.md) | [Slither](audits/slither-report.txt)
+
+---
+
 ## Relationship to FINI
 
 FINI handles T+2 settlement. Heung Syndicate handles everything before it. The two systems are complementary. We are not replacing FINI. We are the missing bookbuilding module that feeds verified allocation data into FINI's settlement workflow.
