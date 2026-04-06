@@ -141,7 +141,10 @@ export default function InvestorPage() {
       args: [commitHash as `0x${string}`],
       value: depositAmount,
     }, {
-      onSuccess: () => showToast("Sealed bid committed. Salt saved — you need it to reveal."),
+      onSuccess: () => {
+        if (address) localStorage.setItem(saltKey(address), salt);
+        showToast("Sealed bid committed. Salt saved — you need it to reveal.");
+      },
       onError: (e) => showToast(e.message.slice(0, 80), "error"),
     });
   }
@@ -398,8 +401,15 @@ export default function InvestorPage() {
           </div>
 
           <div style={{ marginBottom: "1rem" }}>
-            <label style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "0.4rem" }}>Your Salt</label>
-            <input value={salt} onChange={(e) => setSalt(e.target.value)} style={inputStyle} />
+            <label style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "0.4rem" }}>
+              Your Salt {salt && <span style={{ color: "#22C55E", fontWeight: 700 }}>✓ Auto-loaded</span>}
+            </label>
+            <input value={salt} readOnly style={{ ...inputStyle, backgroundColor: salt ? "#f0fdf4" : "#fff", fontSize: "0.7rem", color: "rgba(0,0,0,0.6)" }} placeholder="Salt will auto-load from your commit" />
+            {!salt && (
+              <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.72rem", color: "#EF4444", fontWeight: 600, marginTop: "0.35rem" }}>
+                Salt not found. Did you commit from this wallet on this browser?
+              </p>
+            )}
           </div>
 
           <Button onClick={revealIOI} disabled={isPending || !price || !quantity || !salt} variant="primary" size="md" style={{ width: "100%" }}>
