@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 
-const STATUS_COLORS = {
+type IPOStatus = "CLOSED" | "LIVE" | "UPCOMING";
+
+const STATUS_COLORS: Record<IPOStatus, { bg: string; shadow: string; text: string }> = {
   CLOSED:   { bg: "#22C55E", shadow: "5px 5px 0 0 #22C55E", text: "#000" },
   LIVE:     { bg: "#FFD23F", shadow: "5px 5px 0 0 #FFD23F", text: "#000" },
   UPCOMING: { bg: "#e5e7eb", shadow: "5px 5px 0 0 #000",    text: "#000" },
