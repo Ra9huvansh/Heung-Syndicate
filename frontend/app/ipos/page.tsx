@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useReadContract } from "wagmi";
+import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI } from "@/lib/contracts";
 
 type IPOStatus = "CLOSED" | "LIVE" | "UPCOMING";
 
@@ -10,26 +12,13 @@ const STATUS_COLORS: Record<IPOStatus, { bg: string; shadow: string; text: strin
   UPCOMING: { bg: "#e5e7eb", shadow: "5px 5px 0 0 #000",    text: "#000" },
 };
 
-const IPOS: { name: string; ticker: string; sector: string; marketCap: string; priceRange: string; totalShares: string; mechanism: string; status: IPOStatus; opens: string | null; closes: string | null; strikePrice: string | null; coverage: string | null; links: { bookrunner: string; investor: string; regulator: string } | null }[] = [
-  {
-    name:        "HashTech Holdings",
-    ticker:      "HTH",
-    sector:      "Technology",
-    marketCap:   "HK$1.2B",
-    priceRange:  "HK$8.00 – HK$10.00",
-    totalShares: "100,000,000",
-    mechanism:   "Mechanism A",
-    status:      "LIVE" as const,
-    opens:       "Apr 6, 2026",
-    closes:      "Apr 8, 2026",
-    strikePrice: null,
-    coverage:    null,
-    links: {
-      bookrunner: "/dashboard",
-      investor:   "/investor",
-      regulator:  "/regulator",
-    },
-  },
+// Phase 6 = Closed
+function phaseToStatus(phase: number | undefined): IPOStatus {
+  if (phase === undefined) return "LIVE";
+  return phase >= 6 ? "CLOSED" : "LIVE";
+}
+
+const UPCOMING_IPOS = [
   {
     name:        "FinServ Capital",
     ticker:      "FSC",
@@ -38,7 +27,7 @@ const IPOS: { name: string; ticker: string; sector: string; marketCap: string; p
     priceRange:  "HK$12.00 – HK$15.00",
     totalShares: "200,000,000",
     mechanism:   "Mechanism A",
-    status:      "UPCOMING" as const,
+    status:      "UPCOMING" as IPOStatus,
     opens:       "May 12, 2026",
     closes:      "May 19, 2026",
     strikePrice: null,
@@ -53,7 +42,7 @@ const IPOS: { name: string; ticker: string; sector: string; marketCap: string; p
     priceRange:  "HK$22.00 – HK$28.00",
     totalShares: "500,000,000",
     mechanism:   "Mechanism B",
-    status:      "UPCOMING" as const,
+    status:      "UPCOMING" as IPOStatus,
     opens:       "Jun 3, 2026",
     closes:      "Jun 10, 2026",
     strikePrice: null,
@@ -63,6 +52,38 @@ const IPOS: { name: string; ticker: string; sector: string; marketCap: string; p
 ];
 
 export default function IPOsPage() {
+  const { data: phase } = useReadContract({
+    address: CONTRACT_ADDRESSES.bookBuilder,
+    abi: BOOK_BUILDER_ABI,
+    functionName: "getPhase",
+    query: { refetchInterval: 5000 },
+  });
+
+  const hthStatus = phaseToStatus(phase !== undefined ? Number(phase) : undefined);
+
+  const IPOS = [
+    {
+      name:        "HashTech Holdings",
+      ticker:      "HTH",
+      sector:      "Technology",
+      marketCap:   "HK$1.2B",
+      priceRange:  "HK$8.00 – HK$10.00",
+      totalShares: "100,000,000",
+      mechanism:   "Mechanism A",
+      status:      hthStatus,
+      opens:       "Apr 6, 2026",
+      closes:      "Apr 8, 2026",
+      strikePrice: null,
+      coverage:    null,
+      links: {
+        bookrunner: "/dashboard",
+        investor:   "/investor",
+        regulator:  "/regulator",
+      },
+    },
+    ...UPCOMING_IPOS,
+  ];
+
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "2rem 1.5rem" }}>
 
