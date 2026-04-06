@@ -23,15 +23,76 @@ export function buildMerkleTree(allocations: AllocationEntry[]): MerkleTree {
   }, { sortPairs: true });
 }
 
-/** Generate a Merkle proof for a specific investor. Returns hex strings for contract call. */
+/** Generate a Merkle proof for a specific investor. Returns hex strings for contract call.
+ *  Implements the exact same iterative algorithm as Allocation.sol _buildMerkleRoot().
+ */
 export function generateProof(
-  tree: MerkleTree,
+  _tree: MerkleTree,
+  investor: `0x${string}`,
+  allocatedShares: bigint,
+  allocations?: AllocationEntry[]
+): `0x${string}`[] {
+  // If allocations provided, use direct computation matching the contract exactly
+  if (allocations && allocations.length > 0) {
+    return generateProofDirect(allocations, investor, allocatedShares);
+  }
+  // Fallback to merkletreejs
+  const leaf = buildLeaf(investor, allocatedShares);
+  const proof = _tree.getProof(leaf);
+  return proof.map((p) => `0x${p.data.toString("hex")}` as `0x${string}`);
+}
+
+/** Direct proof generation matching Allocation.sol _buildMerkleRoot exactly */
+function generateProofDirect(
+  allocations: AllocationEntry[],
   investor: `0x${string}`,
   allocatedShares: bigint
 ): `0x${string}`[] {
-  const leaf = buildLeaf(investor, allocatedShares);
-  const proof = tree.getProof(leaf);
-  return proof.map((p) => `0x${p.data.toString("hex")}` as `0x${string}`);
+  let leaves = allocations.map((a) => buildLeaf(a.investor, a.allocatedShares));
+
+  // Find my index
+  const myLeaf = buildLeaf(investor, allocatedShares);
+  let myIdx = leaves.findIndex((l) => l.toString("hex") === myLeaf.toString("hex"));
+  if (myIdx === -1) return [];
+
+  const proof: Buffer[] = [];
+
+  while (leaves.length > 1) {
+    const len = leaves.length;
+    const newLen = Math.ceil(len / 2);
+    const next: Buffer[] = [];
+    let newMyIdx = -1;
+
+    for (let i = 0; i < newLen; i++) {
+      const left  = i * 2;
+      const right = left + 1;
+
+      if (right >= len) {
+        // Odd leaf carries up
+        next.push(leaves[left]);
+        if (myIdx === left) newMyIdx = i;
+      } else {
+        // Add sibling to proof if my leaf is in this pair
+        if (myIdx === left)  { proof.push(leaves[right]); newMyIdx = i; }
+        if (myIdx === right) { proof.push(leaves[left]);  newMyIdx = i; }
+
+        // Sort pair before hashing — matches contract
+        const [a, b] = Buffer.compare(leaves[left], leaves[right]) <= 0
+          ? [leaves[left], leaves[right]]
+          : [leaves[right], leaves[left]];
+        const parent = Buffer.from(
+          keccak256(`0x${Buffer.concat([a, b]).toString("hex")}`).slice(2),
+          "hex"
+        );
+        next.push(parent);
+      }
+    }
+
+    leaves = next;
+    myIdx  = newMyIdx;
+  }
+
+  return proof.map((p) => `0x${p.toString("hex")}` as `0x${string}`);
 }
 
 /** Verify a proof client-side before submitting the transaction. */

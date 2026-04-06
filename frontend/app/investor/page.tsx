@@ -178,7 +178,7 @@ export default function InvestorPage() {
       allocatedShares: a.allocatedShares,
     }));
     const tree  = buildMerkleTree(entries);
-    const proof = generateProof(tree, address, myAllocation);
+    const proof = generateProof(tree, address, myAllocation, entries);
 
     writeContract({
       address: CONTRACT_ADDRESSES.allocation,
