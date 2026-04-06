@@ -186,4 +186,47 @@ contract BookBuilderTest is Test {
         bb.whitelistInvestor(addr, false, false);
         assertTrue(bb.isWhitelisted(addr));
     }
+
+    /// @notice Price range must always be stored exactly as provided
+    function testFuzz_PriceRangeStoredCorrectly(uint256 low, uint256 high) public {
+        vm.assume(low > 0 && high > low);
+        vm.assume(high < type(uint128).max); // avoid overflow
+
+        BookBuilder bbF = new BookBuilder(
+            bookrunner, issuer, keccak256("FUZZ"), "FuzzCo", "FZZ", 100_000_000,
+            low, high,
+            block.timestamp + 1 days,
+            block.timestamp + 2 days,
+            block.timestamp + 3 days,
+            BookBuilder.Mechanism.A
+        );
+
+        BookBuilder.Offering memory o = bbF.getOffering();
+        assertEq(o.priceRangeLow, low);
+        assertEq(o.priceRangeHigh, high);
+    }
+
+    /// @notice Non-bookrunner can never advance phase regardless of caller
+    function testFuzz_OnlyBookrunnerCanAdvancePhase(address caller) public {
+        vm.assume(caller != bookrunner);
+        vm.assume(caller != address(0));
+
+        vm.prank(caller);
+        vm.expectRevert();
+        bb.advancePhase();
+
+        // Phase must remain Setup
+        assertEq(uint8(bb.getPhase()), uint8(BookBuilder.Phase.Setup));
+    }
+
+    /// @notice Dewhitelisting must always remove access regardless of flags set
+    function testFuzz_DewhitelistAlwaysRemovesAccess(bool isCornerstone, bool isConnectedPerson) public {
+        vm.startPrank(bookrunner);
+        bb.whitelistInvestor(investor1, isCornerstone, isConnectedPerson);
+        assertTrue(bb.isWhitelisted(investor1));
+
+        bb.dewhitelistInvestor(investor1);
+        assertFalse(bb.isWhitelisted(investor1));
+        vm.stopPrank();
+    }
 }

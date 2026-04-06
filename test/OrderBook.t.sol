@@ -221,4 +221,90 @@ contract OrderBookTest is Test {
         ob.commitIOI{value: DEPOSIT}(hash);
         assertEq(ob.getCommitmentCount(), 1);
     }
+
+    /// @notice Reveal must always fail if the hash doesn't match — regardless of inputs
+    function testFuzz_RevealWithWrongInputsAlwaysFails(
+        uint256 price,
+        uint256 qty,
+        bytes32 salt,
+        bytes32 wrongSalt
+    ) public {
+        vm.assume(salt != wrongSalt);
+        vm.assume(price > 0 && qty > 0);
+
+        bytes32 hash = keccak256(abi.encodePacked(price, qty, salt));
+
+        _commitAndAdvanceToReveal();
+
+        // Commit investor1 with correct hash
+        // (already committed in helper, override with our fuzz hash)
+        // Use a fresh investor instead
+        address fuzzyInvestor = makeAddr("fuzzyInvestor");
+        vm.deal(fuzzyInvestor, 1 ether);
+        vm.prank(bookrunner);
+        bb.whitelistInvestor(fuzzyInvestor, false, false);
+
+        // Re-setup: fresh contracts for this fuzz run
+        BookBuilder bbF = new BookBuilder(bookrunner, issuer, keccak256("FUZZ_IPO"), "FuzzCo", "FZZ", 100_000_000, 8e18, 10e18, block.timestamp + 1 days, block.timestamp + 2 days, block.timestamp + 3 days, BookBuilder.Mechanism.A);
+        OrderBook obF = new OrderBook(address(bbF), DEPOSIT);
+        vm.startPrank(bookrunner);
+        bbF.whitelistInvestor(fuzzyInvestor, false, false);
+        bbF.advancePhase(); // → Commitment
+        vm.stopPrank();
+
+        vm.prank(fuzzyInvestor);
+        obF.commitIOI{value: DEPOSIT}(hash);
+
+        vm.prank(bookrunner);
+        bbF.advancePhase(); // → Reveal
+
+        // Reveal with wrong salt — must always revert
+        vm.prank(fuzzyInvestor);
+        vm.expectRevert("Hash mismatch - invalid reveal");
+        obF.revealIOI(price, qty, wrongSalt, OrderBook.InvestorType.LongOnly, OrderBook.OrderType.Limit);
+    }
+
+    /// @notice Deposit overpayment is accepted but exact deposit is also accepted
+    function testFuzz_CommitAcceptsDepositAtOrAboveMinimum(uint256 extra) public {
+        vm.assume(extra <= 10 ether);
+        bytes32 hash = keccak256(abi.encodePacked(INV1_PRICE, INV1_QTY, INV1_SALT));
+        vm.deal(investor1, DEPOSIT + extra);
+        vm.prank(investor1);
+        ob.commitIOI{value: DEPOSIT + extra}(hash);
+        assertEq(ob.getCommitmentCount(), 1);
+    }
+
+    /// @notice Coverage ratio must always be > 0 after at least one reveal
+    function testFuzz_CoverageRatioPositiveAfterReveal(uint256 price, uint256 qty) public {
+        vm.assume(price >= 8e18 && price <= 10e18);
+        vm.assume(qty >= 1 && qty <= 10_000_000);
+
+        bytes32 salt = keccak256("fuzzsalt");
+        bytes32 hash = keccak256(abi.encodePacked(price, qty, salt));
+
+        BookBuilder bbF = new BookBuilder(bookrunner, issuer, keccak256("FUZZ2"), "FuzzCo", "FZZ", 100_000_000, 8e18, 10e18, block.timestamp + 1 days, block.timestamp + 2 days, block.timestamp + 3 days, BookBuilder.Mechanism.A);
+        OrderBook obF = new OrderBook(address(bbF), DEPOSIT);
+
+        address fi = makeAddr("fi");
+        vm.deal(fi, 1 ether);
+
+        vm.startPrank(bookrunner);
+        bbF.whitelistInvestor(fi, false, false);
+        bbF.advancePhase();
+        vm.stopPrank();
+
+        vm.prank(fi);
+        obF.commitIOI{value: DEPOSIT}(hash);
+
+        vm.prank(bookrunner);
+        bbF.advancePhase();
+
+        vm.prank(fi);
+        obF.revealIOI(price, qty, salt, OrderBook.InvestorType.LongOnly, OrderBook.OrderType.Limit);
+
+        OrderBook.AggregatedDemand memory d = obF.getAggregatedDemand();
+        assertGt(d.coverageRatio, 0);
+        assertEq(d.bidCount, 1);
+        assertEq(d.totalShares, qty);
+    }
 }
