@@ -49,7 +49,7 @@ export default function LandingPage() {
         <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 500, fontSize: "1.1rem", color: "rgba(0,0,0,0.65)", maxWidth: 620, lineHeight: 1.6 }}>
           The complete post-August-2025 HKEX compliance system. Cryptographic
           bookbuilding, Merkle-rooted allocation reporting, and real-time public
-          float monitoring — in a single on-chain system.
+          float monitoring, in a single on-chain system.
         </p>
       </div>
 
