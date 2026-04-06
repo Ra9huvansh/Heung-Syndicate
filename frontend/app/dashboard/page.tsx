@@ -131,6 +131,13 @@ export default function DashboardPage() {
     query: { refetchInterval: 5000 },
   });
 
+  const { data: whitelistedAddresses, refetch: refetchWhitelist } = useReadContract({
+    address: CONTRACT_ADDRESSES.bookBuilder,
+    abi: BOOK_BUILDER_ABI,
+    functionName: "getWhitelistedAddresses",
+    query: { refetchInterval: 5000 },
+  });
+
   // ── Watch events ────────────────────────────────────────────────────────
   useWatchContractEvent({
     address: CONTRACT_ADDRESSES.orderBook,
@@ -253,6 +260,7 @@ export default function DashboardPage() {
       {
         onSuccess: () => {
           setWhitelistInput("");
+          refetchWhitelist();
           addToast(`Address whitelisted`, "success");
         },
         onError: (e) => addToast(e.message.split("\n")[0], "error"),
@@ -318,7 +326,12 @@ export default function DashboardPage() {
 
           {/* Whitelist */}
           <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #000", backgroundColor: "#fff", padding: "1.25rem" }}>
-            <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem" }}>Whitelist Investor</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>Whitelist Investor</p>
+              <span style={{ fontFamily: "Space Mono, monospace", fontSize: "0.7rem", backgroundColor: "#FFD23F", border: "2px solid #000", padding: "0.1rem 0.5rem", fontWeight: 700 }}>
+                {whitelistedAddresses ? whitelistedAddresses.length : 0} whitelisted
+              </span>
+            </div>
             <input
               value={whitelistInput}
               onChange={(e) => setWhitelistInput(e.target.value)}
@@ -328,6 +341,15 @@ export default function DashboardPage() {
             <Button onClick={whitelistInvestor} disabled={isPending || !whitelistInput} variant="ghost" size="sm" style={{ width: "100%" }}>
               {isPending ? "Confirming…" : "Whitelist"}
             </Button>
+            {whitelistedAddresses && whitelistedAddresses.length > 0 && (
+              <div style={{ marginTop: "0.75rem", borderTop: "2px solid #000", paddingTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                {whitelistedAddresses.map((addr) => (
+                  <p key={addr} style={{ fontFamily: "Space Mono, monospace", fontSize: "0.65rem", color: "rgba(0,0,0,0.6)", margin: 0 }}>
+                    ✓ {addr.slice(0, 10)}…{addr.slice(-6)}
+                  </p>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Strike price — only in PriceDiscovery */}
