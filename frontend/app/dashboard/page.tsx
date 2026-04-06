@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useReadContract, useReadContracts, useWriteContract, useWatchContractEvent } from "wagmi";
+import { useAccount, useReadContract, useWriteContract, useWatchContractEvent, usePublicClient } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
 import StatCard from "@/components/book/StatCard";
@@ -66,6 +66,9 @@ export default function DashboardPage() {
   const [whitelistInput, setWhitelistInput] = useState("");
   const [timeRemaining,  setTimeRemaining]  = useState(0);
   const [toasts,         setToasts]         = useState<Toast[]>([]);
+  const [revealedBids,   setRevealedBids]   = useState<{ price: number; quantity: number }[]>([]);
+
+  const publicClient = usePublicClient();
   let   toastId = 0;
 
   const { writeContract, isPending } = useWriteContract();
@@ -138,16 +141,27 @@ export default function DashboardPage() {
     query: { refetchInterval: 5000 },
   });
 
-  // Read each whitelisted investor's IOI directly from the public mapping
-  const { data: ioiResults } = useReadContracts({
-    contracts: (whitelistedAddresses ?? []).map((addr) => ({
+  // ── Fetch historical IOIRevealed events to build accurate demand curve ──
+  useEffect(() => {
+    if (!publicClient) return;
+    publicClient.getLogs({
       address: CONTRACT_ADDRESSES.orderBook,
-      abi: ORDER_BOOK_ABI,
-      functionName: "iois" as const,
-      args: [addr] as const,
-    })),
-    query: { refetchInterval: 3000, enabled: (whitelistedAddresses?.length ?? 0) > 0 },
-  });
+      event: { type: "event", name: "IOIRevealed", inputs: [
+        { name: "investor", type: "address", indexed: true },
+        { name: "price",    type: "uint256", indexed: false },
+        { name: "quantity", type: "uint256", indexed: false },
+        { name: "investorType", type: "uint8", indexed: false },
+        { name: "orderType",    type: "uint8", indexed: false },
+      ]},
+      fromBlock: 0n,
+    }).then((logs) => {
+      const bids = logs.map((log) => ({
+        price:    Number(formatUnits((log.args as { price: bigint }).price, 18)),
+        quantity: Number((log.args as { quantity: bigint }).quantity),
+      }));
+      setRevealedBids(bids);
+    }).catch(() => {});
+  }, [publicClient]);
 
   // ── Watch events ────────────────────────────────────────────────────────
   useWatchContractEvent({
@@ -214,33 +228,19 @@ export default function DashboardPage() {
   const weightedAvg    = demand ? Number(formatUnits(demand.weightedAvgPrice, 18)) : 0;
   const totalShares    = demand ? Number(demand.totalShares) : 0;
 
-  // Build demand curve from per-address IOI reads (status >= 2 = Revealed)
+  // Build accurate cumulative demand curve from IOIRevealed events
   const demandCurveData = (() => {
-    const revealed = (ioiResults ?? [])
-      .map((r) => r.result as { pricePerShare: bigint; quantity: bigint; status: number } | undefined)
-      .filter((ioi): ioi is { pricePerShare: bigint; quantity: bigint; status: number } =>
-        ioi != null && ioi.status >= 2
-      );
+    if (revealedBids.length === 0) return [];
 
-    if (revealed.length === 0) {
-      // Fall back to synthetic 3-point curve from aggregated data
-      if (totalShares === 0) return [];
-      return [
-        { price: priceLow,    demand: totalShares },
-        { price: weightedAvg > 0 ? weightedAvg : (priceLow + priceHigh) / 2, demand: Math.round(totalShares * 0.7) },
-        { price: priceHigh,   demand: Math.round(totalShares * 0.4) },
-      ].sort((a, b) => a.price - b.price);
-    }
-
-    // Cumulative demand curve: at each price point, demand = total shares from bids at that price or higher
-    // Sort prices ascending so chart reads left (cheap, high demand) → right (expensive, low demand)
-    const totalQty = revealed.reduce((sum, ioi) => sum + Number(ioi.quantity), 0);
+    // Group quantities by price
     const priceMap = new Map<number, number>();
-    for (const ioi of revealed) {
-      const price = Number(formatUnits(ioi.pricePerShare, 18));
-      priceMap.set(price, (priceMap.get(price) ?? 0) + Number(ioi.quantity));
+    for (const bid of revealedBids) {
+      priceMap.set(bid.price, (priceMap.get(bid.price) ?? 0) + bid.quantity);
     }
+
+    // Sort prices ascending; at each price, cumulative demand = shares from bids at this price or higher
     const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => a - b);
+    const totalQty = revealedBids.reduce((s, b) => s + b.quantity, 0);
     const points: { price: number; demand: number }[] = [];
     let remaining = totalQty;
     for (const price of sortedPrices) {
