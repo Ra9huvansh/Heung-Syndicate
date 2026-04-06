@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useReadContract, useWriteContract, useWatchContractEvent, usePublicClient } from "wagmi";
-import { formatUnits, parseUnits } from "viem";
+import { formatUnits, parseUnits, parseAbiItem } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
 import StatCard from "@/components/book/StatCard";
 import PhaseTimeline from "@/components/book/PhaseTimeline";
@@ -144,23 +144,28 @@ export default function DashboardPage() {
   // ── Fetch historical IOIRevealed events to build accurate demand curve ──
   useEffect(() => {
     if (!publicClient) return;
-    publicClient.getLogs({
-      address: CONTRACT_ADDRESSES.orderBook,
-      event: { type: "event", name: "IOIRevealed", inputs: [
-        { name: "investor", type: "address", indexed: true },
-        { name: "price",    type: "uint256", indexed: false },
-        { name: "quantity", type: "uint256", indexed: false },
-        { name: "investorType", type: "uint8", indexed: false },
-        { name: "orderType",    type: "uint8", indexed: false },
-      ]},
-      fromBlock: 0n,
-    }).then((logs) => {
-      const bids = logs.map((log) => ({
-        price:    Number(formatUnits((log.args as { price: bigint }).price, 18)),
-        quantity: Number((log.args as { quantity: bigint }).quantity),
-      }));
-      setRevealedBids(bids);
-    }).catch(() => {});
+    const fetchLogs = async () => {
+      try {
+        const latestBlock = await publicClient.getBlockNumber();
+        const fromBlock = latestBlock > 10000n ? latestBlock - 10000n : 0n;
+        const logs = await publicClient.getLogs({
+          address: CONTRACT_ADDRESSES.orderBook,
+          event: parseAbiItem("event IOIRevealed(address indexed investor, uint256 price, uint256 quantity, uint8 investorType, uint8 orderType)"),
+          fromBlock,
+          toBlock: "latest",
+        });
+        const bids = logs.map((log) => ({
+          price:    Number(formatUnits((log.args as { price: bigint }).price, 18)),
+          quantity: Number((log.args as { quantity: bigint }).quantity),
+        }));
+        if (bids.length > 0) setRevealedBids(bids);
+      } catch (e) {
+        console.error("getLogs failed", e);
+      }
+    };
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
   }, [publicClient]);
 
   // ── Watch events ────────────────────────────────────────────────────────
