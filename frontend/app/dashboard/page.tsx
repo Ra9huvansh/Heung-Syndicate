@@ -243,23 +243,36 @@ export default function DashboardPage() {
       priceMap.set(bid.price, (priceMap.get(bid.price) ?? 0) + bid.quantity);
     }
 
-    // Sort prices DESCENDING: walk from highest bid down to lowest
-    // At each price point, demand = cumulative shares from investors willing to pay AT LEAST this price
-    // i.e. subtract bids ABOVE this price as we walk down
+    // Walk from HIGHEST bid to LOWEST, accumulating demand at each level.
+    // For each bid price: demand AT that price includes all bids at that price or higher.
+    // The step DOWN happens just ABOVE each bid price (investor drops out above their max price).
+    // We model this with two points per bid: {price, full_demand} and {price+ε, demand_without_this_bid}
     const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => b - a); // high → low
     const points: { price: number; demand: number }[] = [];
     let cumulative = 0;
-    for (const price of sortedPrices) {
+    for (let i = 0; i < sortedPrices.length; i++) {
+      const price = sortedPrices[i];
       cumulative += priceMap.get(price)!;
+      // At this price: full cumulative demand (this investor IS willing here)
       points.push({ price, demand: cumulative });
     }
-    // Points are high→low; reverse to low→high for chart (left = cheap, right = expensive)
+    // Reverse to ascending order for chart
     points.reverse();
-    // Extend flat line left to priceLow
-    if (points.length > 0 && priceLow < points[0].price) {
-      points.unshift({ price: priceLow, demand: points[0].demand });
+    // Now insert drop points: just above each bid price, demand drops by that bid's quantity.
+    // We do this by inserting {price + ε, demand - qty} after each point.
+    const withDrops: { price: number; demand: number }[] = [];
+    for (let i = 0; i < points.length; i++) {
+      withDrops.push(points[i]);
+      if (i < points.length - 1) {
+        // Between this price and the next, demand drops to the next level
+        withDrops.push({ price: points[i].price + 0.001, demand: points[i + 1].demand });
+      }
     }
-    return points;
+    // Extend flat line left to priceLow
+    if (withDrops.length > 0 && priceLow < withDrops[0].price) {
+      withDrops.unshift({ price: priceLow, demand: withDrops[0].demand });
+    }
+    return withDrops;
   })();
 
   // ── Actions ──────────────────────────────────────────────────────────────
