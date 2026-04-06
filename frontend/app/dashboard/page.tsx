@@ -243,16 +243,19 @@ export default function DashboardPage() {
       priceMap.set(bid.price, (priceMap.get(bid.price) ?? 0) + bid.quantity);
     }
 
-    // Sort prices ascending; at each price, cumulative demand = shares from bids at this price or higher
-    const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => a - b);
-    const totalQty = revealedBids.reduce((s, b) => s + b.quantity, 0);
+    // Sort prices DESCENDING: walk from highest bid down to lowest
+    // At each price point, demand = cumulative shares from investors willing to pay AT LEAST this price
+    // i.e. subtract bids ABOVE this price as we walk down
+    const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => b - a); // high → low
     const points: { price: number; demand: number }[] = [];
-    let remaining = totalQty;
+    let cumulative = 0;
     for (const price of sortedPrices) {
-      points.push({ price, demand: remaining });
-      remaining -= priceMap.get(price)!;
+      cumulative += priceMap.get(price)!;
+      points.push({ price, demand: cumulative });
     }
-    // Extend flat line left to priceLow so curve fills the full price range
+    // Points are high→low; reverse to low→high for chart (left = cheap, right = expensive)
+    points.reverse();
+    // Extend flat line left to priceLow
     if (points.length > 0 && priceLow < points[0].price) {
       points.unshift({ price: priceLow, demand: points[0].demand });
     }
