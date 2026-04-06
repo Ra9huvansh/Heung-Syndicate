@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAccount, useReadContract, useWriteContract, useWatchContractEvent } from "wagmi";
+import { useAccount, useReadContract, useReadContracts, useWriteContract, useWatchContractEvent } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
 import StatCard from "@/components/book/StatCard";
@@ -131,18 +131,22 @@ export default function DashboardPage() {
     query: { refetchInterval: 5000 },
   });
 
-  const { data: revealedIOIs } = useReadContract({
-    address: CONTRACT_ADDRESSES.orderBook,
-    abi: ORDER_BOOK_ABI,
-    functionName: "getAllRevealedIOIs",
-    query: { refetchInterval: 3000 },
-  });
-
   const { data: whitelistedAddresses, refetch: refetchWhitelist } = useReadContract({
     address: CONTRACT_ADDRESSES.bookBuilder,
     abi: BOOK_BUILDER_ABI,
     functionName: "getWhitelistedAddresses",
     query: { refetchInterval: 5000 },
+  });
+
+  // Read each whitelisted investor's IOI directly from the public mapping
+  const { data: ioiResults } = useReadContracts({
+    contracts: (whitelistedAddresses ?? []).map((addr) => ({
+      address: CONTRACT_ADDRESSES.orderBook,
+      abi: ORDER_BOOK_ABI,
+      functionName: "iois" as const,
+      args: [addr] as const,
+    })),
+    query: { refetchInterval: 3000, enabled: (whitelistedAddresses?.length ?? 0) > 0 },
   });
 
   // ── Watch events ────────────────────────────────────────────────────────
@@ -210,23 +214,32 @@ export default function DashboardPage() {
   const weightedAvg    = demand ? Number(formatUnits(demand.weightedAvgPrice, 18)) : 0;
   const totalShares    = demand ? Number(demand.totalShares) : 0;
 
-  // Build demand curve from actual revealed IOIs: sort by price desc, compute cumulative demand
+  // Build demand curve from per-address IOI reads (status >= 2 = Revealed)
   const demandCurveData = (() => {
-    if (!revealedIOIs || revealedIOIs.length === 0) return [];
-    // Sort bids by price descending
-    const sorted = [...revealedIOIs].sort((a, b) =>
-      Number(b.pricePerShare) - Number(a.pricePerShare)
-    );
-    // Build cumulative curve points: at each unique price, total shares demanded at that price or higher
+    const revealed = (ioiResults ?? [])
+      .map((r) => r.result as { pricePerShare: bigint; quantity: bigint; status: number } | undefined)
+      .filter((ioi): ioi is { pricePerShare: bigint; quantity: bigint; status: number } =>
+        ioi != null && ioi.status >= 2
+      );
+
+    if (revealed.length === 0) {
+      // Fall back to synthetic 3-point curve from aggregated data
+      if (totalShares === 0) return [];
+      return [
+        { price: priceLow,    demand: totalShares },
+        { price: weightedAvg > 0 ? weightedAvg : (priceLow + priceHigh) / 2, demand: Math.round(totalShares * 0.7) },
+        { price: priceHigh,   demand: Math.round(totalShares * 0.4) },
+      ].sort((a, b) => a.price - b.price);
+    }
+
+    // Sort by price descending, build cumulative step curve
+    const sorted = [...revealed].sort((a, b) => Number(b.pricePerShare) - Number(a.pricePerShare));
     const points: { price: number; demand: number }[] = [];
     let cumulative = 0;
     for (const ioi of sorted) {
       const price = Number(formatUnits(ioi.pricePerShare, 18));
       const qty   = Number(ioi.quantity);
-      // Add a point just before this step (to create vertical drop)
-      if (points.length > 0) {
-        points.push({ price, demand: cumulative });
-      }
+      if (points.length > 0) points.push({ price, demand: cumulative });
       cumulative += qty;
       points.push({ price, demand: cumulative });
     }
