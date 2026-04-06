@@ -13,9 +13,9 @@ const PHASE_NAMES   = ["Setup", "Commitment", "Reveal", "Price Discovery", "Allo
 const INVESTOR_TYPES = ["Long-Only", "Hedge Fund", "SWF", "Pension", "Insurance"];
 const ORDER_TYPES    = ["Limit", "Strike (Any Price)"];
 
-const SALT_KEY     = "heung_ioi_salt";
-const PRICE_KEY    = "heung_ioi_price";
-const QUANTITY_KEY = "heung_ioi_quantity";
+const saltKey     = (addr: string) => `heung_ioi_salt_${addr}`;
+const priceKey    = (addr: string) => `heung_ioi_price_${addr}`;
+const quantityKey = (addr: string) => `heung_ioi_quantity_${addr}`;
 
 export default function InvestorPage() {
   const { address } = useAccount();
@@ -95,32 +95,41 @@ export default function InvestorPage() {
     query: { refetchInterval: 3000 },
   });
 
-  // ── Load saved inputs ───────────────────────────────────────────────────
+  // ── Load saved inputs per wallet — clear everything on wallet switch ────
   useEffect(() => {
-    const saved = localStorage.getItem(SALT_KEY);
-    if (saved) setSalt(saved);
-    const savedPrice = localStorage.getItem(PRICE_KEY);
-    const savedQty   = localStorage.getItem(QUANTITY_KEY);
+    if (!address) return;
+    setPrice("");
+    setQuantity("");
+    setSalt("");
+    setCommitHash("");
+    const savedSalt = localStorage.getItem(saltKey(address));
+    const savedPrice = localStorage.getItem(priceKey(address));
+    const savedQty   = localStorage.getItem(quantityKey(address));
+    if (savedSalt)  setSalt(savedSalt);
     if (savedPrice) setPrice(savedPrice);
     if (savedQty)   setQuantity(savedQty);
-  }, []);
+  }, [address]);
 
   function generateAndStoreSalt() {
+    if (!address) return;
     const newSalt = generateSalt();
     setSalt(newSalt);
-    localStorage.setItem(SALT_KEY, newSalt);
+    localStorage.setItem(saltKey(address), newSalt);
   }
 
   useEffect(() => {
+    if (!address) return;
     if (price && quantity && salt) {
       try {
         const hash = computeCommitHash(parseUnits(price, 18), BigInt(quantity), salt as `0x${string}`);
         setCommitHash(hash);
-        localStorage.setItem(PRICE_KEY,    price);
-        localStorage.setItem(QUANTITY_KEY, quantity);
+        localStorage.setItem(priceKey(address),    price);
+        localStorage.setItem(quantityKey(address), quantity);
       } catch { setCommitHash(""); }
+    } else {
+      setCommitHash("");
     }
-  }, [price, quantity, salt]);
+  }, [price, quantity, salt, address]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   function commitIOI() {
@@ -132,7 +141,7 @@ export default function InvestorPage() {
       args: [commitHash as `0x${string}`],
       value: depositAmount,
     }, {
-      onSuccess: () => showToast("Sealed bid committed on-chain. Salt saved to localStorage."),
+      onSuccess: () => showToast("Sealed bid committed. Salt saved — you need it to reveal."),
       onError: (e) => showToast(e.message.slice(0, 80), "error"),
     });
   }
