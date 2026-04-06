@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
-import { generateSalt, computeCommitHash } from "@/lib/merkle";
+import { generateSalt, computeCommitHash, buildMerkleTree, generateProof } from "@/lib/merkle";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import StatCard from "@/components/book/StatCard";
@@ -88,6 +88,13 @@ export default function InvestorPage() {
     query: { refetchInterval: 5000 },
   });
 
+  const { data: allAllocations } = useReadContract({
+    address: CONTRACT_ADDRESSES.allocation,
+    abi: ALLOCATION_ABI,
+    functionName: "getAllAllocations",
+    query: { refetchInterval: 5000 },
+  });
+
   const { data: demand } = useReadContract({
     address: CONTRACT_ADDRESSES.orderBook,
     abi: ORDER_BOOK_ABI,
@@ -163,12 +170,21 @@ export default function InvestorPage() {
   }
 
   function claimShares() {
-    if (!myAllocation || !address || !merkleRoot) return;
+    if (!myAllocation || !address || !merkleRoot || !allAllocations) return;
+
+    // Build Merkle tree from all on-chain allocations and generate proof for this investor
+    const entries = allAllocations.map((a: { investor: `0x${string}`; allocatedShares: bigint }) => ({
+      investor: a.investor,
+      allocatedShares: a.allocatedShares,
+    }));
+    const tree  = buildMerkleTree(entries);
+    const proof = generateProof(tree, address, myAllocation);
+
     writeContract({
       address: CONTRACT_ADDRESSES.allocation,
       abi: ALLOCATION_ABI,
       functionName: "claimShares",
-      args: [myAllocation, [] as `0x${string}`[]],
+      args: [myAllocation, proof],
     }, {
       onSuccess: () => showToast(`Shares claimed! ${Number(myAllocation).toLocaleString()} HTH transferred to your wallet.`),
       onError: (e) => showToast(e.message.slice(0, 80), "error"),

@@ -120,6 +120,12 @@ export const ALLOCATION_ABI = [
       { name: "retailBps",           type: "uint256" },
     ]
   }]},
+  { name: "getAllAllocations", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "tuple[]", components: [
+    { name: "investor",        type: "address" },
+    { name: "allocatedShares", type: "uint256" },
+    { name: "tranche",         type: "uint8"   },
+    { name: "pricePerShare",   type: "uint256" },
+  ]}]},
   // Events
   { name: "StrikePriceSet",     type: "event", inputs: [{ name: "strikePrice", type: "uint256", indexed: false }, { name: "timestamp", type: "uint256", indexed: false }] },
   { name: "AllocationFinalized",type: "event", inputs: [{ name: "merkleRoot", type: "bytes32", indexed: false }, { name: "strikePriceWei", type: "uint256", indexed: false }, { name: "totalAllocatedShares", type: "uint256", indexed: false }] },
