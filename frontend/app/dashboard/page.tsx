@@ -252,6 +252,10 @@ export default function DashboardPage() {
       points.push({ price, demand: remaining });
       remaining -= priceMap.get(price)!;
     }
+    // Extend flat line left to priceLow so curve fills the full price range
+    if (points.length > 0 && priceLow < points[0].price) {
+      points.unshift({ price: priceLow, demand: points[0].demand });
+    }
     return points;
   })();
 
