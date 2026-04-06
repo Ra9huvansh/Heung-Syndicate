@@ -1,7 +1,8 @@
 "use client";
 
-import { useReadContract, useWatchContractEvent } from "wagmi";
-import { formatUnits } from "viem";
+import { useState, useEffect } from "react";
+import { useReadContract, useWatchContractEvent, usePublicClient } from "wagmi";
+import { formatUnits, parseAbiItem } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
 import StatCard from "@/components/book/StatCard";
 import DemandCurve from "@/components/book/DemandCurve";
@@ -12,6 +13,32 @@ import Badge from "@/components/ui/Badge";
 const PHASE_NAMES = ["Setup", "Commitment", "Reveal", "Price Discovery", "Allocation", "Settlement", "Closed"];
 
 export default function IssuerPage() {
+  const [revealedBids, setRevealedBids] = useState<{ price: number; quantity: number }[]>([]);
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    if (!publicClient) return;
+    const fetch = async () => {
+      try {
+        const latest = await publicClient.getBlockNumber();
+        const from = latest > 10000n ? latest - 10000n : 0n;
+        const logs = await publicClient.getLogs({
+          address: CONTRACT_ADDRESSES.orderBook,
+          event: parseAbiItem("event IOIRevealed(address indexed investor, uint256 price, uint256 quantity, uint8 investorType, uint8 orderType)"),
+          fromBlock: from, toBlock: "latest",
+        });
+        const bids = logs.map((l) => ({
+          price:    Number(formatUnits((l.args as { price: bigint }).price, 18)),
+          quantity: Number((l.args as { quantity: bigint }).quantity),
+        }));
+        if (bids.length > 0) setRevealedBids(bids);
+      } catch {}
+    };
+    fetch();
+    const id = setInterval(fetch, 5000);
+    return () => clearInterval(id);
+  }, [publicClient]);
+
   const { data: phase } = useReadContract({ address: CONTRACT_ADDRESSES.bookBuilder, abi: BOOK_BUILDER_ABI, functionName: "getPhase" });
   const { data: offering } = useReadContract({ address: CONTRACT_ADDRESSES.bookBuilder, abi: BOOK_BUILDER_ABI, functionName: "getOffering" });
   const { data: demand, refetch } = useReadContract({ address: CONTRACT_ADDRESSES.orderBook, abi: ORDER_BOOK_ABI, functionName: "getAggregatedDemand" });
@@ -34,11 +61,32 @@ export default function IssuerPage() {
   const coverage    = demand ? (Number(demand.coverageRatio) / 1e18).toFixed(2) : "0.00";
   const strikePriceNum = strikePrice ? Number(formatUnits(strikePrice, 18)) : undefined;
 
-  const demandCurveData = totalShares > 0 ? [
-    { price: priceLow,  demand: totalShares },
-    { price: weightedAvg > 0 ? weightedAvg : (priceLow + priceHigh) / 2, demand: Math.round(totalShares * 0.7) },
-    { price: priceHigh, demand: Math.round(totalShares * 0.4) },
-  ].sort((a, b) => a.price - b.price) : [];
+  const demandCurveData = (() => {
+    if (revealedBids.length === 0) return [];
+    const priceMap = new Map<number, number>();
+    for (const bid of revealedBids) {
+      priceMap.set(bid.price, (priceMap.get(bid.price) ?? 0) + bid.quantity);
+    }
+    const sortedPrices = Array.from(priceMap.keys()).sort((a, b) => b - a);
+    const points: { price: number; demand: number }[] = [];
+    let cumulative = 0;
+    for (const price of sortedPrices) {
+      cumulative += priceMap.get(price)!;
+      points.push({ price, demand: cumulative });
+    }
+    points.reverse();
+    const withDrops: { price: number; demand: number }[] = [];
+    for (let i = 0; i < points.length; i++) {
+      withDrops.push(points[i]);
+      if (i < points.length - 1) {
+        withDrops.push({ price: points[i].price + 0.001, demand: points[i + 1].demand });
+      }
+    }
+    if (withDrops.length > 0 && priceLow < withDrops[0].price) {
+      withDrops.unshift({ price: priceLow, demand: withDrops[0].demand });
+    }
+    return withDrops;
+  })();
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "2rem 1.5rem" }}>
