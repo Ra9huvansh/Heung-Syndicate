@@ -42,9 +42,9 @@ contract Deploy is Script {
 
         // ── 2. BookBuilder (phase orchestrator) ──────────────────────────────
         uint256 now_        = block.timestamp;
-        uint256 commitEnd   = now_ + 2 days;
-        uint256 revealEnd   = now_ + 4 days;
-        uint256 pricingEnd  = now_ + 5 days;
+        uint256 commitEnd   = now_ + 30 days;
+        uint256 revealEnd   = now_ + 60 days;
+        uint256 pricingEnd  = now_ + 90 days;
 
         BookBuilder bookBuilder = new BookBuilder(
             deployer,                        // bookrunner
