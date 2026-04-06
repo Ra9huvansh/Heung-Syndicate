@@ -15,6 +15,49 @@ The complete on-chain IPO lifecycle compliance infrastructure for post-August 20
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph Frontend["Frontend — Next.js + wagmi v2"]
+        BR[Bookrunner Dashboard]
+        INV[Investor Portal]
+        ISS[Issuer View]
+        REG[Regulator View]
+        FL[Float Monitor]
+    end
+
+    subgraph Contracts["Smart Contracts — HashKey Chain Testnet"]
+        BB[BookBuilder.sol\nPhase Orchestrator\nAccess Control]
+        OB[OrderBook.sol\nCommit-Reveal IOIs\nDeposit Slashing]
+        AL[Allocation.sol\nStrike Price\nMerkle Audit Trail]
+        SR[ShareRegistry.sol\nERC-20 Share Token\nHolder Classification]
+        FM[FloatMonitor.sol\nFloat Computation\nAlert Emission]
+    end
+
+    BR -->|advancePhase\nwhitelistInvestor\nsetStrikePrice\ncomputeAllocations| BB
+    BR -->|slashNonRevealers\ngetAllRevealedIOIs| OB
+    INV -->|commitIOI + deposit\nrevealIOI\nclaimShares + merkleProof| OB
+    INV -->|claimShares| AL
+    ISS -->|getAggregatedDemand\ngetPhase| OB
+    REG -->|getLogs\nverifyMerkleProof\nmerkleRoot| AL
+    FL  -->|getAllCompanies\ncheckAllCompanies| FM
+
+    BB -->|phase gating\nrole checks| OB
+    BB -->|phase gating| AL
+    OB -->|getAllRevealedIOIs| AL
+    AL -->|transfer shares\nclassify holders| SR
+    FM -->|getAllHolders\nbalanceOf\nisPublicFloat| SR
+
+    style BB fill:#FFD23F,stroke:#000,color:#000
+    style OB fill:#74B9FF,stroke:#000,color:#000
+    style AL fill:#88D498,stroke:#000,color:#000
+    style SR fill:#B8A9FA,stroke:#000,color:#000
+    style FM fill:#FFA552,stroke:#000,color:#000
+```
+
+---
+
 ## The Problem
 
 Hong Kong's IPO process has three critical gaps that FINI's T+2 settlement system deliberately left untouched:
