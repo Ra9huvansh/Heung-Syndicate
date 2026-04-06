@@ -10,7 +10,7 @@ const STATUS_COLORS: Record<IPOStatus, { bg: string; shadow: string; text: strin
   UPCOMING: { bg: "#e5e7eb", shadow: "5px 5px 0 0 #000",    text: "#000" },
 };
 
-const IPOS = [
+const IPOS: { name: string; ticker: string; sector: string; marketCap: string; priceRange: string; totalShares: string; mechanism: string; status: IPOStatus; opens: string | null; closes: string | null; strikePrice: string | null; coverage: string | null; links: { bookrunner: string; investor: string; regulator: string } | null }[] = [
   {
     name:        "HashTech Holdings",
     ticker:      "HTH",
