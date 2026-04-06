@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useReadContract, usePublicClient } from "wagmi";
-import { formatUnits, parseAbiItem } from "viem";
+import { formatUnits, parseAbiItem, keccak256, encodePacked } from "viem";
 import { CONTRACT_ADDRESSES, BOOK_BUILDER_ABI, ORDER_BOOK_ABI, ALLOCATION_ABI } from "@/lib/contracts";
-import { computeLeaf } from "@/lib/merkle";
+import { computeLeaf, buildMerkleTree, generateProof } from "@/lib/merkle";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/book/StatCard";
@@ -23,6 +23,7 @@ export default function RegulatorPage() {
   const { data: merkleRoot } = useReadContract({ address: CONTRACT_ADDRESSES.allocation, abi: ALLOCATION_ABI, functionName: "merkleRoot" });
   const { data: strikePrice } = useReadContract({ address: CONTRACT_ADDRESSES.allocation, abi: ALLOCATION_ABI, functionName: "strikePrice" });
   const { data: allocationFinalized } = useReadContract({ address: CONTRACT_ADDRESSES.allocation, abi: ALLOCATION_ABI, functionName: "allocationFinalized" });
+  const { data: allAllocations } = useReadContract({ address: CONTRACT_ADDRESSES.allocation, abi: ALLOCATION_ABI, functionName: "getAllAllocations" });
 
   const currentPhase = phase !== undefined ? Number(phase) : 0;
 
@@ -59,11 +60,22 @@ export default function RegulatorPage() {
   }
 
   function verifyMerkleProof() {
-    if (!verifyAddress || !verifyAmount || !merkleRoot) return;
+    if (!verifyAddress || !verifyAmount || !merkleRoot || !allAllocations) return;
     try {
-      const leaf = computeLeaf(verifyAddress as `0x${string}`, BigInt(verifyAmount));
-      // With a single-leaf tree the leaf IS the root
-      const isValid = leaf === (merkleRoot as string);
+      const entries = (allAllocations as unknown as { investor: `0x${string}`; allocatedShares: bigint }[]).map((a) => ({
+        investor: a.investor,
+        allocatedShares: a.allocatedShares,
+      }));
+      const tree  = buildMerkleTree(entries);
+      const proof = generateProof(tree, verifyAddress as `0x${string}`, BigInt(verifyAmount), entries);
+
+      // OZ-compatible client-side verification: walk the proof path and check root
+      let hash: `0x${string}` = keccak256(encodePacked(["address", "uint256"], [verifyAddress as `0x${string}`, BigInt(verifyAmount)]));
+      for (const p of proof) {
+        const [a, b] = hash <= p ? [hash, p] : [p, hash];
+        hash = keccak256(encodePacked(["bytes32", "bytes32"], [a, b]));
+      }
+      const isValid = hash === (merkleRoot as string);
       setVerifyResult(isValid ? "valid" : "invalid");
     } catch {
       setVerifyResult("invalid");
