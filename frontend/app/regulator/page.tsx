@@ -46,7 +46,7 @@ export default function RegulatorPage() {
 
       const all = [
         ...commits.map((e) => ({ type: "IOICommitted",    data: `${String(e.args.investor).slice(0,10)}… committed sealed bid`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),
-        ...reveals.map((e) => ({ type: "IOIRevealed",     data: `${String(e.args.investor).slice(0,10)}… revealed — HK$${Number(formatUnits(e.args.price ?? 0n, 18)).toFixed(2)}, ${Number(e.args.quantity ?? 0n).toLocaleString()} shares`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),
+        ...reveals.map((e) => ({ type: "IOIRevealed",     data: `${String(e.args.investor).slice(0,10)}… revealed HK$${Number(formatUnits(e.args.price ?? 0n, 18)).toFixed(2)}, ${Number(e.args.quantity ?? 0n).toLocaleString()} shares`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),
         ...phases.map((e) => ({ type: "PhaseAdvanced",    data: `Phase ${PHASE_NAMES[Number(e.args.from ?? 0)]} → ${PHASE_NAMES[Number(e.args.to ?? 0)]}`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),
         ...strikes.map((e) => ({ type: "StrikePriceSet",  data: `Strike price set: HK$${Number(formatUnits(e.args.strikePrice ?? 0n, 18)).toFixed(2)}`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),
         ...allocations.map((e) => ({ type: "AllocationFinalized", data: `Merkle root: ${String(e.args.merkleRoot).slice(0,14)}…  Strike: HK$${Number(formatUnits(e.args.strikePriceWei ?? 0n, 18)).toFixed(2)}`, block: String(e.blockNumber), tx: String(e.transactionHash).slice(0,12) + "…" })),

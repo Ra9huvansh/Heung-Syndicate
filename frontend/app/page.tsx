@@ -16,7 +16,7 @@ const VIEWS = [
   {
     href: "/issuer",
     label: "Issuer View",
-    desc: "Real-time verified aggregate demand — coverage ratio, weighted avg price, tranche split.",
+    desc: "Real-time verified aggregate demand: coverage ratio, weighted avg price, tranche split.",
     color: "#88D498",
   },
   {
@@ -28,7 +28,7 @@ const VIEWS = [
   {
     href: "/float",
     label: "Float Monitor",
-    desc: "Real-time HKEX float compliance — tiered thresholds, breach alerts, lock-up countdowns.",
+    desc: "Real-time HKEX float compliance: tiered thresholds, breach alerts, lock-up countdowns.",
     color: "#FF6B6B",
   },
 ];
@@ -39,7 +39,7 @@ export default function LandingPage() {
       {/* Hero */}
       <div style={{ marginBottom: "3.5rem" }}>
         <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "rgba(0,0,0,0.5)", marginBottom: "0.75rem" }}>
-          HashKey Chain Testnet — Chain ID 133
+          HashKey Chain Testnet | Chain ID 133
         </p>
         <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "clamp(2.5rem, 6vw, 4.5rem)", lineHeight: 1.05, letterSpacing: "-0.03em", color: "#000", marginBottom: "1.25rem" }}>
           On-Chain IPO Lifecycle

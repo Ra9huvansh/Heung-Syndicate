@@ -30,7 +30,7 @@ export default function AlertBanner({ ticker, floatPct, requiredPct, type }: Ale
         </span>
       </div>
       <span style={{ fontFamily: "Space Mono, monospace", fontSize: "0.85rem" }}>
-        {floatPct}% public float — minimum {requiredPct}%
+        {floatPct}% public float (minimum {requiredPct}%)
       </span>
     </div>
   );

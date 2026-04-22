@@ -84,7 +84,7 @@ export default function DemandCurve({ data, priceRangeLow, priceRangeHigh, strik
           marginBottom: "1.25rem",
         }}
       >
-        Demand Curve — Cumulative IOI Book
+        Demand Curve: Cumulative IOI Book
       </p>
 
       <ResponsiveContainer width="100%" height={280}>
@@ -119,7 +119,7 @@ export default function DemandCurve({ data, priceRangeLow, priceRangeHigh, strik
 
       {data.length === 0 && (
         <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.875rem", color: "rgba(0,0,0,0.4)", textAlign: "center", marginTop: "1rem" }}>
-          Awaiting reveal phase — demand curve builds as IOIs are revealed
+          Awaiting reveal phase. Demand curve builds as IOIs are revealed.
         </p>
       )}
     </div>

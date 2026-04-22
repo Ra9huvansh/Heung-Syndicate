@@ -316,23 +316,45 @@ export default function InvestorPage() {
       {ioiStatus > 0 && (
         <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #000", backgroundColor: "#fff", padding: "1.25rem", marginBottom: "1.5rem" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
-            <StatCard label="My Bid Price" value={ioiStatus >= 2 && myIOI ? `HK$${Number(formatUnits(myIOI[1], 18)).toFixed(2)}` : "Sealed"} />
-            <StatCard label="Quantity"     value={ioiStatus >= 2 && myIOI ? Number(myIOI[2]).toLocaleString() : "—"} unit="shares" />
-            <StatCard label="Status"       value={STATUS_LABELS[ioiStatus]} />
+            <StatCard label="My Bid Price"    value={ioiStatus >= 2 && myIOI ? `HK$${Number(formatUnits(myIOI[1], 18)).toFixed(2)}` : "Sealed"} />
+            <StatCard label="Bid Quantity"    value={ioiStatus >= 2 && myIOI ? Number(myIOI[2]).toLocaleString() : "—"} unit="shares" />
+            <StatCard label="Status"          value={STATUS_LABELS[ioiStatus]} />
           </div>
         </div>
       )}
+
+      {/* ── Allocation result (visible from Allocation phase onward) ─────── */}
+      {currentPhase >= 4 && myAllocation && myAllocation > 0n && (
+        <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #22C55E", backgroundColor: "#f0fdf4", padding: "1.25rem", marginBottom: "1.5rem" }}>
+          <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
+            Your Allocation
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+            <StatCard label="Allocated Shares" value={(Number(myAllocation)).toLocaleString()} bgColor="#f0fdf4" shadowColor="#22C55E" />
+            <StatCard label="Strike Price"      value="HK$9.50" bgColor="#f0fdf4" />
+            <StatCard label="Claimed"           value={hasClaimed ? "Yes" : "Pending"} bgColor={hasClaimed ? "#f0fdf4" : "#fff"} shadowColor={hasClaimed ? "#22C55E" : undefined} />
+          </div>
+        </div>
+      )}
+
+      {/* NextID identity callout */}
+      <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #74B9FF", backgroundColor: "#EFF6FF", padding: "0.875rem 1.25rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", backgroundColor: "#74B9FF", border: "2px solid #000", padding: "0.2rem 0.5rem", whiteSpace: "nowrap" }}>Roadmap</span>
+        <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.78rem", fontWeight: 500, margin: 0 }}>
+          Investor identity verification will integrate with <strong>NextID on HashKey Chain</strong> to enforce jurisdiction-based eligibility checks — closing a compliance gap that FINI explicitly does not handle.
+        </p>
+      </div>
 
       {/* ── STEP 1: Commit ──────────────────────────────────────────────── */}
       {currentPhase === 1 && ioiStatus === 0 && (
         <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #FFD23F", backgroundColor: "#fff", padding: "1.5rem", marginBottom: "1.5rem" }}>
           <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Step 1 — Commit Sealed Bid
+            Step 1: Commit Sealed Bid
           </h2>
 
           <div style={{ marginBottom: "1rem" }}>
             <label style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: "0.4rem" }}>
-              Your Salt (secret — save this!)
+              Your Salt (secret, save this!)
             </label>
             <div style={{ display: "flex", gap: "0.5rem" }}>
               <input value={salt} readOnly style={{ ...inputStyle, flex: 1, fontSize: "0.7rem", backgroundColor: "#FFFDF5" }} placeholder="Generate a salt first" />
@@ -341,7 +363,7 @@ export default function InvestorPage() {
             {salt && (
               <div style={{ marginTop: "0.4rem", backgroundColor: "#FFF3CD", border: "2px solid #FFD23F", padding: "0.5rem 0.75rem" }}>
                 <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.75rem", fontWeight: 600 }}>
-                  Saved to localStorage. Back it up — you cannot reveal without it.
+                  Saved to localStorage. Back it up. You cannot reveal without it.
                 </p>
               </div>
             )}
@@ -387,7 +409,7 @@ export default function InvestorPage() {
       {currentPhase === 2 && ioiStatus === 1 && (
         <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #22C55E", backgroundColor: "#fff", padding: "1.5rem", marginBottom: "1.5rem" }}>
           <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "1.25rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Step 2 — Reveal Your Bid
+            Step 2: Reveal Your Bid
           </h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
@@ -429,7 +451,7 @@ export default function InvestorPage() {
           </div>
 
           <Button onClick={revealIOI} disabled={isPending || !price || !quantity || !salt} variant="primary" size="md" style={{ width: "100%" }}>
-            {isPending ? "Confirming…" : "Reveal Bid — Get Deposit Back"}
+            {isPending ? "Confirming…" : "Reveal Bid and Get Deposit Back"}
           </Button>
         </div>
       )}
@@ -438,7 +460,7 @@ export default function InvestorPage() {
       {currentPhase === 5 && myAllocation && myAllocation > 0n && !hasClaimed && (
         <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #74B9FF", backgroundColor: "#fff", padding: "1.5rem" }}>
           <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Step 3 — Claim Your Shares
+            Step 3: Claim Your Shares
           </h2>
           <div style={{ marginBottom: "1rem" }}>
             <StatCard label="Allocated to You" value={(Number(myAllocation) / 1_000_000).toFixed(2)} unit="M shares" bgColor="#f0f8ff" />

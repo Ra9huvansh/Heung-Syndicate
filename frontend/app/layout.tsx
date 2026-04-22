@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientShell from "@/components/layout/ClientShell";
 
 export const metadata: Metadata = {
-  title: "Heung Syndicate — On-Chain IPO Compliance",
+  title: "Heung Syndicate: On-Chain IPO Compliance",
   description: "Complete on-chain IPO lifecycle compliance infrastructure for post-August-2025 HKEX rules.",
 };
 

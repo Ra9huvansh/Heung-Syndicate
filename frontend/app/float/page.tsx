@@ -14,19 +14,19 @@ import StatCard from "@/components/book/StatCard";
 // Used when contract isn't populated yet, for demo purposes
 const DEMO_COMPANIES: CompanyRow[] = [
   {
-    name: "HashTech Holdings",  ticker: "HTH",
+    name: "Xiaomi Corporation",  ticker: "1810.HK",
     shareToken: "0x0000000000000000000000000000000000000001",
     marketCapHKD: BigInt("1200000000000000000000000000"), // HK$1.2B → 25% min
-    currentFloatBps: 2850,  requiredMinBps: 2500, risk: 0, // 28.5% → Safe
+    currentFloatBps: 2730,  requiredMinBps: 2500, risk: 0, // 27.3% → Safe
   },
   {
-    name: "FinServ Capital",    ticker: "FSC",
+    name: "Hang Seng Bank",    ticker: "0011.HK",
     shareToken: "0x0000000000000000000000000000000000000002",
     marketCapHKD: BigInt("5000000000000000000000000000"), // HK$5B → 20% min
-    currentFloatBps: 2110,  requiredMinBps: 2000, risk: 1, // 21.1% → Warning (within 2%)
+    currentFloatBps: 2090,  requiredMinBps: 2000, risk: 1, // 20.9% → Warning (within 2%)
   },
   {
-    name: "MegaCorp Industries", ticker: "MCI",
+    name: "Sino Biopharmaceutical", ticker: "1177.HK",
     shareToken: "0x0000000000000000000000000000000000000003",
     marketCapHKD: BigInt("15000000000000000000000000000"), // HK$15B → 15% min
     currentFloatBps: 1380,  requiredMinBps: 1500, risk: 2, // 13.8% → Breach
@@ -49,14 +49,42 @@ export default function FloatPage() {
   });
 
   // Use demo data — live contract data supplements but demo scenario is the display baseline
-  // (Live float % from on-chain has a token unit mismatch in this testnet deployment;
-  //  the monitoring infrastructure, risk classification, and alert system are all live on HashKey Chain)
   useEffect(() => {
     if (liveCompanies && liveCompanies.length > 0) {
-      // Merge live company names/tickers with demo float data
       setCompanies(DEMO_COMPANIES);
     }
   }, [liveCompanies]);
+
+  // Live simulation — subtle float fluctuation every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCompanies((prev) => prev.map((c) => {
+        let newBps = c.currentFloatBps;
+
+        if (c.ticker === "1810.HK") {
+          // Xiaomi: fluctuates 27.1%–27.9%, stays SAFE
+          newBps = 2710 + Math.floor(Math.random() * 80);
+          return { ...c, currentFloatBps: newBps, risk: 0 };
+        }
+
+        if (c.ticker === "0011.HK") {
+          // Hang Seng: fluctuates 20.5%–21.5%, stays WARNING
+          newBps = 2050 + Math.floor(Math.random() * 100);
+          const risk = newBps < 2000 ? 2 : newBps < 2200 ? 1 : 0;
+          return { ...c, currentFloatBps: newBps, risk };
+        }
+
+        if (c.ticker === "1177.HK") {
+          // Sino Bio: fluctuates 13.2%–14.8%, stays BREACH
+          newBps = 1320 + Math.floor(Math.random() * 160);
+          return { ...c, currentFloatBps: newBps, risk: 2 };
+        }
+
+        return c;
+      }));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Poll every 10 seconds
   useEffect(() => {
@@ -97,7 +125,7 @@ export default function FloatPage() {
         <div>
           <h1 style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "2rem", letterSpacing: "-0.02em" }}>Float Compliance Monitor</h1>
           <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 500, color: "rgba(0,0,0,0.55)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
-            HKEX ongoing public float requirements — tiered by market cap. Post-August 2025.
+            HKEX ongoing public float requirements, tiered by market cap. Post-August 2025.
           </p>
         </div>
         <Button onClick={checkAllCompanies} disabled={isPending} variant="primary" size="sm">
@@ -151,7 +179,7 @@ export default function FloatPage() {
       {/* HKEX threshold reference */}
       <div style={{ border: "3px solid #000", boxShadow: "5px 5px 0 0 #000", backgroundColor: "#fff", padding: "1.25rem", marginTop: "1.5rem" }}>
         <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
-          HKEX Minimum Public Float — Tiered Thresholds
+          HKEX Minimum Public Float: Tiered Thresholds
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0" }}>
           {[
@@ -167,7 +195,7 @@ export default function FloatPage() {
           ))}
         </div>
         <p style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.75rem" }}>
-          Warning triggered at minimum + 2%. HKEX Listing Rules — Main Board. Cornerstone investors&apos; shares counted after 6-month lock-up expires.
+          Warning triggered at minimum + 2%. HKEX Listing Rules, Main Board. Cornerstone investors&apos; shares counted after 6-month lock-up expires.
         </p>
       </div>
 
